@@ -1,0 +1,1 @@
+docker run -p 8050:8050 --memory=2G scrapinghub/splash --maxrss 2000
