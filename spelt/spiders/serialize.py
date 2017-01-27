@@ -10,9 +10,9 @@ import lxml.html
 import scrapy
 from scrapy_splash import SplashRequest
 
-from .config import (block_elems,
-                     exclude_tags,
-                     exclude_selectors)
+from .spelt_opts import (block_elems,
+                         exclude_tags,
+                         exclude_selectors)
 
 
 class SerializeSpider(scrapy.Spider):
