@@ -7,6 +7,7 @@ from colorama import Fore, Back, Style, init
 init(autoreset=True)
 
 import lxml.html
+from lxml import etree
 import scrapy
 from scrapy_splash import SplashRequest
 
@@ -23,6 +24,7 @@ class SerializeSpider(scrapy.Spider):
     exclude_selectors = exclude_selectors
     exclude_tags = exclude_tags
     wspace_rx = re.compile('(\s+)|(\t+)|(\n+)')
+    encoding = 'utf-8'
 
     def start_requests(self):
         for url in self.start_urls:
@@ -67,28 +69,10 @@ class SerializeSpider(scrapy.Spider):
         self.link_urls.extend(hrefs)
         return set(hrefs)
 
-    def parse_input_elem(self, elem):
-        skip_types = ('hidden',
-                      'checkbox',
-                      'password')
-
-        if elem.attrib.get('type') in skip_types:
-            return ''
-
-        text = ''
-        text_c = elem.text_content().strip()
-
-        placeholder = elem.attrib.get('placeholder')
-
-        if placeholder:
-            text += '[placeholder]'+placeholder.strip()+'\n'
-
-        if text_c:
-            text += text_c
-
-        return text
-
     def strip_elems(self, exclude_elems):
+        """
+        removes elements from doc tree
+        """
         for E in exclude_elems:
             try:
                 E.getparent().remove(E)
@@ -126,70 +110,40 @@ class SerializeSpider(scrapy.Spider):
 
         return fn
 
-    def serialize(self, elem):
+    def serialize(self, body):
         """
-        return text for elem and its children
-        with or without trailing new line, as appropriate
+        get text for elements
+
+        Tags are removed from inline elements
+        so their text/tail gets moved to their parent.
+
+        I know the placeholders for form elements
+        is not quite right.
         """
-        # skip comments and such
-        if not isinstance(elem.tag, str):
-            return ''
+        for el in body.iterdescendants():
+            # skip comments and such
+            if not isinstance(el.tag, str):
+                continue
 
-        if elem.tag in exclude_tags:
-            return ''
+            text = ''
+            placeholders = []
 
-        if elem.tag in ('input', 'textarea'):
-            text_input = self.parse_input_elem(elem)
-            if text_input:
-                return text_input+'\n'
+            for child in el.iterdescendants():
+                placeholder = child.get('placeholder')
+                if placeholder:
+                    placeholders.append(placeholder)
+                    # make sure we don't get placeholders more than once
+                    child.set('placeholder', None)
 
-        # text content of the current element tree part
-        content = ''
+                if child.tag not in block_elems:
+                    child.drop_tag()
 
-        # block elem as in block level HTML element
-        if elem.tag in block_elems:
-            if elem.text:
-                if not elem.text.isspace():
-                    content += elem.text
-
-            if elem.tail:
-                if not elem.tail.isspace():
-                    content += ' '+elem.tail
-
-            # we need a line break even if the elem has no text
-            # ... it's easier to remove extra line breaks
-            # than insert only the ones I want
-            return content+'\n'
-        else:
-            # inline elem
-            if elem.text and elem.text.isspace() is False:
-                content += elem.text+' '
-
-            if elem.tail and elem.tail.isspace() is False:
-                content += elem.tail.lstrip()
-
-        return content
-
-    def serialize_elems(self, elems):
-        """
-        return serialized text from all elements
-        """
-        text = ''
-
-        for i in elems:
-            raw_text = [self.serialize(elem)
-                        for elem in
-                        i.iterdescendants()]
-
-            elem_text = ''.join([i for i in
-                                 raw_text
-                                 if i])
-
-            # singularize whitespace
-            text += re.sub(self.wspace_rx,
-                           lambda i: i.group(0)[0],
-                           elem_text)
-        return text
+            text += ' '.join(placeholders)
+            txt = el.text or ''
+            tail = el.tail or ''
+            text += txt.strip() + tail.strip()
+            text = re.sub('\s+', ' ', text)
+            yield text
 
     def parse(self, response):
         """
@@ -207,20 +161,24 @@ class SerializeSpider(scrapy.Spider):
             logging.info(E)
             yield
 
+        enc_elem = doc.xpath('.//meta[@charset]')
+        if enc_elem:
+            self.encoding = enc_elem[0].get('charset')
+
         doc = self.strip_elems_by_tag(doc)
         doc = self.strip_elems_by_selector(doc)
 
-        elems = doc.xpath('.//body/*')
+        body = doc.xpath('./body')
 
-        if not len(elems):
+        if not len(body):
             logging.info('{}[WARNING] No elements found in {}{}'.format(
                 Fore.RED,
                 response.url,
                 Style.RESET_ALL))
             yield
 
-        # All text from elements
-        text = self.serialize_elems(elems)
+        elem_text = self.serialize(body[0])
+        text = '\n'.join([i for i in elem_text if i])
 
         if not text:
             logging.info('{}[ERROR] No text found {}{}'.format(

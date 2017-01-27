@@ -1,0 +1,1 @@
+Setting names are usually prefixed with the component that they configure. For example, proper setting names for a fictional robots.txt extension would be ROBOTSTXT_ENABLED, ROBOTSTXT_OBEY, ROBOTSTXT_CACHEDIR, etc.

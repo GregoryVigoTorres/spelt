@@ -1,0 +1,3 @@
+When you use Scrapy, you have to tell it which settings you’re using. You can do this by using an environment variable, SCRAPY_SETTINGS_MODULE.
+The value of SCRAPY_SETTINGS_MODULE should be in Python path syntax, e.g. myproject.settings. Note that the settings module should be on the Python import search path.
+

@@ -1,19 +1,24 @@
 # exclude elements by tag name
 exclude_tags = [
+    'head',
     'script',
     'noscript',
     'style'
 ]
 
-# exclude elements by CSS selector
+# # exclude elements by CSS selector
 exclude_selectors = ['.wy-side-nav-search',
-                    'div.wy-menu:nth-child(2)']
+                     'wy-menu',
+                     'div.wy-menu:nth-child(2)']
+
+# exclude_selectors = []
 
 # bock elements trigger a line break
 block_elems = [
     'article',
     'aside',
     'blockquote',
+    'body',
     'br',
     'button',
     'canvas',
@@ -56,7 +61,6 @@ block_elems = [
     'th',
     'thead',
     'tr',
-    'ul',
     'video'
 ]
 
