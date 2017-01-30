@@ -15,6 +15,7 @@ class FileExportPipeline(object):
                                               Style.RESET_ALL))
         C = cls()
         C.root = crawler.settings.get('DATA_DIR')
+        C.save_html = crawler.settings.get('SAVE_HTML')
         return C
 
     def process_item(self, item, spider):
@@ -27,10 +28,17 @@ class FileExportPipeline(object):
         """
         dest_path = os.path.join(self.root, item.get('filename'))
 
-        with open(dest_path, mode='w') as fd:
+        with open(dest_path+'.txt', mode='w') as fd:
             fd.write(item['text'])
             logging.info('{}saved {}{}'.format(Fore.CYAN,
-                                               dest_path,
+                                               dest_path+'.txt',
                                                Style.RESET_ALL))
+
+        if self.save_html:
+            with open(dest_path+'.html', mode='w') as fd:
+                fd.write(item['html'])
+                logging.info('{}saved {}{}'.format(Fore.CYAN,
+                                                   dest_path+'.html',
+                                                   Style.RESET_ALL))
 
         return item

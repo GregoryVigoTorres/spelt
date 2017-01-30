@@ -62,6 +62,10 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(root, 'data')
 if not os.path.exists(DATA_DIR):
     os.mkdir(DATA_DIR)
+
+# Save response HTML
+SAVE_HTML = True
+
 ITEM_PIPELINES = {
    'spelt.pipelines.FileExportPipeline': 300,
 }
