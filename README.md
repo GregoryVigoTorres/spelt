@@ -26,11 +26,12 @@ If you want to use the `runsplash` script you need to have [Docker](https://www.
 I think this is by far the easiest way to run splash, but it's not the only way.
 You may need to make runsplash executable. e.g. `chmod 755 runsplash`
 
-If you don't use the `runsplash` script, be sure to check the Splash options in `settings.py`. Consult the [scrapy-splash](https://github.com/scrapy-plugins/scrapy-splash) docs for reference.
+If you don't use the `runsplash` script, be sure to verify the Splash options in `settings.py`. Consult the [scrapy-splash](https://github.com/scrapy-plugins/scrapy-splash) docs for reference.
 
-You can change `splash_args` in `settings.py` (see [Splash docs](https://splash.readthedocs.io/en/stable/) for reference) to scrape a little faster or slower, which might be useful if Splash is timing out or it's taking too long to scrape. Optimal settings depend a lot on the network and site you're scraping. Consult the Splash docs for all available options.
+You can change `splash_args` in `settings.py` (see [Splash docs](https://splash.readthedocs.io/en/stable/) for reference) to e.g. scrape a little faster or slower, which might be useful if Splash is timing out or it's taking too long to scrape. Optimal settings depend a lot on the network and site you're scraping. Consult the Splash docs for all available options.
 
 Edit `spiders/serialize.py` to define the URL you want to scrape, or any other spider options, per the [Scrapy spider docs](https://doc.scrapy.org/en/latest/topics/spiders.html#scrapy-spider).
+**Spelt** is really a straightforward Scrapy project, so consult the Scrapy docs for all possible options.
 
 Edit `DATA_DIR` in `scraper/settings.py` to change the directory where the text will be saved.
 All the other settings are explained in the [Scrapy docs](https://doc.scrapy.org/en/latest/topics/settings.html).
@@ -38,9 +39,12 @@ All the other settings are explained in the [Scrapy docs](https://doc.scrapy.org
 To start crawling `cd` into the directory with `scrapy.cfg` or a child directory of it and type `scrapy crawl serialize`.
 
 Spelt serialization options are in `spiders/spelt_opts.py`.
-`block_elems` are block level HTML elements that should have a line break after their content: like a `<div>`, for example.
-`exclude_elems` defines elements by tag name that are skipped entirely. You can skip all `<noscript>` elements, for example.
-`exclude_selectors` is where you can define elements to exclude by CSS selector e.g. `['#footer', '.advertisement']`.
+`BLOCK_ELEMS` are block level HTML elements that should have a line break after their content: like a `<div>`.
+`EXCLUDE_ELEMS` defines elements by tag name that are skipped entirely. You can skip all `<noscript>` elements, for example.
+`EXCLUDE_SELECTORS` is where you can define elements to be excluded, along with all their children, using CSS selectors e.g. `['#footer', '.advertisement']`.
+
+
+To run the tests you have to run them as `python3 -m pytest test` from the project root directory.
 
 
 Copyright Gregory Vigo Torres, 2017
