@@ -11,33 +11,8 @@ from lxml import etree
 import scrapy
 from scrapy_splash import SplashRequest
 
-from .spelt_opts import (block_elems,
-                         exclude_tags,
-                         exclude_selectors)
-
-
-class Serializer():
-    def __init__(self):
-        self.cur_tag = None
-        self.text = ''
-
-    def start(self, tag, attrib):
-        self.cur_tag = tag
-
-    def end(self, tag):
-        if tag in block_elems:
-            self.text += '\n'
-
-    def data(self, data):
-        if data.isspace() is False:
-            data = data.strip()
-            self.text += re.sub('\s+', ' ', data)+' '
-
-    def comment(self, text):
-        pass
-
-    def close(self):
-        return self.text
+from .parser import Serializer
+from .spelt_opts import (EXCLUDE_TAGS, EXCLUDE_SELECTORS)
 
 
 class SerializeSpider(scrapy.Spider):
@@ -45,8 +20,8 @@ class SerializeSpider(scrapy.Spider):
     allowed_domains = []
     start_urls = ['https://doc.scrapy.org/en/latest/topics/settings.html']
     link_urls = []
-    exclude_selectors = exclude_selectors
-    exclude_tags = exclude_tags
+    exclude_selectors = EXCLUDE_SELECTORS
+    exclude_tags = EXCLUDE_TAGS
     wspace_rx = re.compile('(\s+)|(\t+)|(\n+)')
     encoding = 'utf-8'
 

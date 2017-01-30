@@ -1,5 +1,5 @@
 # exclude elements by tag name
-exclude_tags = [
+EXCLUDE_TAGS = [
     'head',
     'script',
     'noscript',
@@ -7,14 +7,10 @@ exclude_tags = [
 ]
 
 # # exclude elements by CSS selector
-exclude_selectors = ['.wy-side-nav-search',
-                     'wy-menu',
-                     'div.wy-menu:nth-child(2)']
-
-# exclude_selectors = []
+EXCLUDE_SELECTORS = []
 
 # bock elements trigger a line break
-block_elems = [
+BLOCK_ELEMS = [
     'article',
     'aside',
     'blockquote',
