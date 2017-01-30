@@ -18,7 +18,6 @@ from .spelt_opts import (block_elems,
 
 class Serializer():
     def __init__(self):
-        self.events = []
         self.cur_tag = None
         self.text = ''
 
@@ -30,9 +29,6 @@ class Serializer():
             self.text += '\n'
 
     def data(self, data):
-        if self.cur_tag in exclude_tags:
-            return
-
         if data.isspace() is False:
             data = data.strip()
             self.text += re.sub('\s+', ' ', data)+' '
@@ -138,82 +134,54 @@ class SerializeSpider(scrapy.Spider):
 
         return fn
 
-
-    def serialize(self, body):
+    def serialize(self, doc):
         """
-        get text for elements
-
+        remove elements
+        return serialized text
         """
-        # for el in body.iterdescendants():
-        for el in body.iterchildren():
-            # skip comments and such
-            if not isinstance(el.tag, str):
-                continue
-
-            tx = list(self.serialize_elem(el))
-            # for i in tx:
-            #     print([list(j) for j in i])
-
-            text = ''
-            placeholders = []
-
-            yield text
+        doc = self.strip_elems_by_tag(doc)
+        doc = self.strip_elems_by_selector(doc)
+        HTML = etree.tostring(doc, encoding=self.encoding)
+        HTML = HTML.decode(encoding=self.encoding)
+        Parser = etree.HTMLParser(target=Serializer())
+        text = etree.HTML(HTML, Parser)
+        return text
 
     def parse(self, response):
         """
         serialize text from HTML response
         """
-        Parser = etree.HTMLParser(target=Serializer())
-        doc = etree.HTML(response.text, Parser)
-        print(doc)
-        # Parser.close()
-        yield {'text': doc, 'fn': 't.txt'}
 
-        # try:
-        #     doc = lxml.html.fromstring(response.text)
-        #     logging.info('[PARSING] {} {}'.format(response.status,
-        #                                           response.url))
-        # except Exception as E:
-        #     logging.info('{}[ERROR] {} cannot be parsed{}'.format(
-        #         Fore.RED,
-        #         response.url,
-        #         Style.RESET_ALL))
-        #     logging.info(E)
-        #     yield
-        #
-        # enc_elem = doc.xpath('.//meta[@charset]')
-        # if enc_elem:
-        #     self.encoding = enc_elem[0].get('charset')
-        #
-        # doc = self.strip_elems_by_tag(doc)
-        # doc = self.strip_elems_by_selector(doc)
-        #
-        # body = doc.xpath('./body')
-        #
-        # if not len(body):
-        #     logging.info('{}[WARNING] No elements found in {}{}'.format(
-        #         Fore.RED,
-        #         response.url,
-        #         Style.RESET_ALL))
-        #     yield
-        #
-        # text = ''
-        # # elem_text = self.serialize(body[0])
-        # # text = '\n'.join([i for i in elem_text if i])
-        # # print(text)
-        #
-        # if not text:
-        #     logging.info('{}[ERROR] No text found {}{}'.format(
-        #         Fore.RED,
-        #         response.url,
-        #         Style.RESET_ALL))
-        #     yield
-        #
-        # fn = self.get_filename(response)
-        #
-        # yield {'filename': fn,
-        #        'html': response.text,
-        #        'text': text}
+        try:
+            doc = lxml.html.fromstring(response.text)
+            logging.info('[PARSING] {} {}'.format(response.status,
+                                                  response.url))
+        except Exception as E:
+            logging.info('{}[ERROR] {} cannot be parsed{}'.format(
+                Fore.RED,
+                response.url,
+                Style.RESET_ALL))
+            logging.info(E)
+            yield
+
+        enc_elem = doc.xpath('.//meta[@charset]')
+        if enc_elem:
+            self.encoding = enc_elem[0].get('charset')
+
+        text = self.serialize(doc)
+
+        if not text:
+            logging.info('{}[ERROR] No text found {}{}'.format(
+                Fore.RED,
+                response.url,
+                Style.RESET_ALL))
+            yield
+
+        fn = self.get_filename(response)
+
+        yield {'filename': fn,
+               'html': response.text,
+               'text': text}
 
         # get links to follow
         # links = self.extract_links(doc, response)
