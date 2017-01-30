@@ -16,6 +16,34 @@ from .spelt_opts import (block_elems,
                          exclude_selectors)
 
 
+class Serializer():
+    def __init__(self):
+        self.events = []
+        self.cur_tag = None
+        self.text = ''
+
+    def start(self, tag, attrib):
+        self.cur_tag = tag
+
+    def end(self, tag):
+        if tag in block_elems:
+            self.text += '\n'
+
+    def data(self, data):
+        if self.cur_tag in exclude_tags:
+            return
+
+        if data.isspace() is False:
+            data = data.strip()
+            self.text += re.sub('\s+', ' ', data)+' '
+
+    def comment(self, text):
+        pass
+
+    def close(self):
+        return self.text
+
+
 class SerializeSpider(scrapy.Spider):
     name = "spelt"
     allowed_domains = []
@@ -110,92 +138,87 @@ class SerializeSpider(scrapy.Spider):
 
         return fn
 
+
     def serialize(self, body):
         """
         get text for elements
 
-        Tags are removed from inline elements
-        so their text/tail gets moved to their parent.
-
-        I know the placeholders for form elements
-        is not quite right.
         """
-        for el in body.iterdescendants():
+        # for el in body.iterdescendants():
+        for el in body.iterchildren():
             # skip comments and such
             if not isinstance(el.tag, str):
                 continue
 
+            tx = list(self.serialize_elem(el))
+            # for i in tx:
+            #     print([list(j) for j in i])
+
             text = ''
             placeholders = []
 
-            for child in el.iterdescendants():
-                placeholder = child.get('placeholder')
-                if placeholder:
-                    placeholders.append(placeholder)
-                    # make sure we don't get placeholders more than once
-                    child.set('placeholder', None)
-
-                if child.tag not in block_elems:
-                    child.drop_tag()
-
-            text += ' '.join(placeholders)
-            txt = el.text or ''
-            tail = el.tail or ''
-            text += txt.strip() + tail.strip()
-            text = re.sub('\s+', ' ', text)
             yield text
 
     def parse(self, response):
         """
         serialize text from HTML response
         """
-        try:
-            doc = lxml.html.fromstring(response.text)
-            logging.info('[PARSING] {} {}'.format(response.status,
-                                                  response.url))
-        except Exception as E:
-            logging.info('{}[ERROR] {} cannot be parsed{}'.format(
-                Fore.RED,
-                response.url,
-                Style.RESET_ALL))
-            logging.info(E)
-            yield
+        Parser = etree.HTMLParser(target=Serializer())
+        doc = etree.HTML(response.text, Parser)
+        print(doc)
+        # Parser.close()
+        yield {'text': doc, 'fn': 't.txt'}
 
-        enc_elem = doc.xpath('.//meta[@charset]')
-        if enc_elem:
-            self.encoding = enc_elem[0].get('charset')
-
-        doc = self.strip_elems_by_tag(doc)
-        doc = self.strip_elems_by_selector(doc)
-
-        body = doc.xpath('./body')
-
-        if not len(body):
-            logging.info('{}[WARNING] No elements found in {}{}'.format(
-                Fore.RED,
-                response.url,
-                Style.RESET_ALL))
-            yield
-
-        elem_text = self.serialize(body[0])
-        text = '\n'.join([i for i in elem_text if i])
-
-        if not text:
-            logging.info('{}[ERROR] No text found {}{}'.format(
-                Fore.RED,
-                response.url,
-                Style.RESET_ALL))
-            yield
-
-        fn = self.get_filename(response)
-
-        yield {'filename': fn,
-               'text': text}
+        # try:
+        #     doc = lxml.html.fromstring(response.text)
+        #     logging.info('[PARSING] {} {}'.format(response.status,
+        #                                           response.url))
+        # except Exception as E:
+        #     logging.info('{}[ERROR] {} cannot be parsed{}'.format(
+        #         Fore.RED,
+        #         response.url,
+        #         Style.RESET_ALL))
+        #     logging.info(E)
+        #     yield
+        #
+        # enc_elem = doc.xpath('.//meta[@charset]')
+        # if enc_elem:
+        #     self.encoding = enc_elem[0].get('charset')
+        #
+        # doc = self.strip_elems_by_tag(doc)
+        # doc = self.strip_elems_by_selector(doc)
+        #
+        # body = doc.xpath('./body')
+        #
+        # if not len(body):
+        #     logging.info('{}[WARNING] No elements found in {}{}'.format(
+        #         Fore.RED,
+        #         response.url,
+        #         Style.RESET_ALL))
+        #     yield
+        #
+        # text = ''
+        # # elem_text = self.serialize(body[0])
+        # # text = '\n'.join([i for i in elem_text if i])
+        # # print(text)
+        #
+        # if not text:
+        #     logging.info('{}[ERROR] No text found {}{}'.format(
+        #         Fore.RED,
+        #         response.url,
+        #         Style.RESET_ALL))
+        #     yield
+        #
+        # fn = self.get_filename(response)
+        #
+        # yield {'filename': fn,
+        #        'html': response.text,
+        #        'text': text}
 
         # get links to follow
-        links = self.extract_links(doc, response)
-
-        for url in links:
-            yield SplashRequest(url,
-                                self.parse,
-                                args=self.settings.get('SPLASH_ARGS'))
+        # links = self.extract_links(doc, response)
+        #
+        # for url in links:
+        #     yield SplashRequest(url,
+        #                         self.parse,
+        #                         args=self.settings.get('SPLASH_ARGS'))
