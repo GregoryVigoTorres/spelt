@@ -45,11 +45,20 @@ class SerializeSpider(scrapy.Spider):
                 if not href:
                     continue
 
-                if 'mailto' in href:
-                    continue
+                href = href.strip()
 
                 if href in self.link_urls:
                     continue
+
+                if 'mailto:' in href:
+                    continue
+
+                if href.startswith('#'):
+                    continue
+
+                if '#' in href:
+                    anchor = href.find('#')
+                    href = href[0:anchor]
 
                 # get real URLs for relative HREFs
                 parsed_url = urlparse(href)
@@ -97,15 +106,16 @@ class SerializeSpider(scrapy.Spider):
     def get_filename(self, response):
         """
         filename for serialized text
+        provides base filename without extension
         """
-        fn = response.url.rstrip('/')+'.txt'
+        fn = response.url.rstrip('/')
         fn = fn.replace('http://', '').\
                 replace('https://', '').\
                 replace('www.', '').\
                 replace('/', '_')
 
-        if len(fn) > 90:
-            fn = fn[0:86]+'.txt'
+        if len(fn) > 80:
+            fn = fn[0:80]
 
         return fn
 
@@ -124,9 +134,9 @@ class SerializeSpider(scrapy.Spider):
 
     def parse(self, response):
         """
-        serialize text from HTML response
+        passes response.text to serialize
+        gets filename from URL
         """
-
         try:
             doc = lxml.html.fromstring(response.text)
             logging.info('[PARSING] {} {}'.format(response.status,
@@ -158,10 +168,10 @@ class SerializeSpider(scrapy.Spider):
                'html': response.text,
                'text': text}
 
-        # get links to follow
-        # links = self.extract_links(doc, response)
-        #
-        # for url in links:
-        #     yield SplashRequest(url,
-        #                         self.parse,
-        #                         args=self.settings.get('SPLASH_ARGS'))
+        ## get links to follow
+        links = self.extract_links(doc, response)
+
+        for url in links:
+            yield SplashRequest(url,
+                                self.parse,
+                                args=self.settings.get('SPLASH_ARGS'))
