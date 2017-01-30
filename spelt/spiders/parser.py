@@ -9,19 +9,24 @@ class Serializer():
 
     def start(self, tag, attrib):
         self.cur_tag = tag
+        if attrib.get('placeholder'):
+            self.text += attrib.get('placeholder')+'\n'
 
     def end(self, tag):
         if tag in BLOCK_ELEMS:
             self.text += '\n'
 
     def data(self, data):
-        if data.isspace() is False:
-            data = data.strip()
-            self.text += re.sub('\s+', ' ', data)+' '
+        data = data.replace('\n', '')
+        self.text += data
+
 
     def comment(self, text):
         pass
 
     def close(self):
-        return self.text
-
+        # try to fixed leading/trailing whitespace
+        text = re.sub(' +', ' ', self.text)
+        text = re.sub('\s+\n', '\n', text)
+        text = re.sub('\n\s+', '\n', text)
+        return text

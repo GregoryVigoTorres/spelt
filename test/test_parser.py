@@ -1,3 +1,5 @@
+import re
+
 from scrapy.http.response.text import TextResponse
 
 from spelt.spiders import serialize
@@ -19,10 +21,14 @@ def test_block_elem_with_children():
         fake_response._set_body(body)
 
     item = spider.parse(fake_response)
-    text = next(item).get('text').strip()
+    text = next(item).get('text')
 
     with open('test/data/block_elem.txt') as fd:
-        test_text = fd.read().strip()
+        test_text = fd.read()
+
+    # ignore trailing whitespace
+    text = re.sub('\n\s', '\n', text).strip()
+    test_text = re.sub('\n\s', '\n', test_text).strip()
 
     assert text == test_text
 
@@ -45,6 +51,10 @@ def test_skip_elems_by_tag():
 
     with open('test/data/skip_by_tag.txt') as fd:
         test_text = fd.read().strip()
+
+    # ignore trailing whitespace
+    text = re.sub('\n\s', '\n', text).strip()
+    test_text = re.sub('\n\s', '\n', test_text).strip()
 
     assert text == test_text
 
@@ -70,8 +80,11 @@ def test_skip_elems_by_selector():
     with open('test/data/skip_by_selector.txt') as fd:
         test_text = fd.read().strip()
 
-    assert text == test_text
+    # ignore trailing whitespace
+    text = re.sub('\n\s', '\n', text).strip()
+    test_text = re.sub('\n\s', '\n', test_text).strip()
 
+    assert text == test_text
 
 def test_form_input():
     spider = serialize.SerializeSpider()
@@ -88,9 +101,9 @@ def test_form_input():
     with open('test/data/form.txt') as fd:
         test_text = fd.read().strip()
 
-    print(text)
-    print('\n')
-    print(test_text)
+    # ignore trailing whitespace
+    text = re.sub('\n\s', '\n', text).strip()
+    test_text = re.sub('\n\s', '\n', test_text).strip()
 
     assert text == test_text
 

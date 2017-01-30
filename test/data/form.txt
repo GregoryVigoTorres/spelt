@@ -1,8 +1,7 @@
-text input placeholder textarea placeholder
-Text Input Label
+Text Input Label text input placeholder
+textarea placeholder
 Textarea content
 Value 1
 Value 2
 Value 3
 Button Text
-
