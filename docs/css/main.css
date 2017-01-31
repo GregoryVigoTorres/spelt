@@ -1,17 +1,17 @@
 @font-face {
   font-family: "ArchivoBlack-Regular";
-  src: url("/fonts/ArchivoBlack-Regular.ttf");
+  src: url("fonts/ArchivoBlack-Regular.ttf");
   font-style: "bold"; }
 @font-face {
   font-family: "ArchivoNarrow-Regular";
-  src: url("/fonts/ArchivoNarrow-Regular.ttf");
+  src: url("fonts/ArchivoNarrow-Regular.ttf");
   font-style: "normal"; }
 html, body {
   width: 100%; }
 
 body {
   font-family: "ArchivoNarrow-Regular";
-  background-image: url("/images/spelt_bg.jpeg");
+  background-image: url("images/spelt_bg.jpeg");
   background-size: 100% auto;
   background-repeat: no-repeat;
   background-color: black; }
@@ -53,7 +53,7 @@ footer {
 
 @media (max-width: 800px) and (orientation: portrait) {
   body {
-    background-image: url("/images/spelt_bg_vert_small.jpeg"); }
+    background-image: url("images/spelt_bg_vert_small.jpeg"); }
 
   footer {
     padding: 0 0 0 1rem; } }
@@ -65,6 +65,6 @@ footer {
     font-size: 0.85rem; } }
 @media (max-width: 1040px) {
   body {
-    background-image: url("/images/spelt_bg_vert_large.jpeg"); } }
+    background-image: url("images/spelt_bg_vert_large.jpeg"); } }
 
 /*# sourceMappingURL=main.css.map */
