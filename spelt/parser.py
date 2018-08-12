@@ -13,6 +13,9 @@ class SerializeParser():
         if attrib.get('placeholder'):
             self.text += attrib.get('placeholder')+'\n'
 
+        if attrib.get('alt'):
+            self.text += attrib.get('alt')+'\n'
+
     def end(self, tag):
         if tag in BLOCK_ELEMS:
             self.text += '\n'
