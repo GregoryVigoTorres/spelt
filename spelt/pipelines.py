@@ -7,9 +7,9 @@ from lxml import etree
 import lxml.html
 from colorama import Fore, init, Style
 from scrapy.exporters import JsonLinesItemExporter
-from spelt.spiders.spelt_opts import EXCLUDE_TAGS, EXCLUDE_SELECTORS
+from spelt.spelt_opts import EXCLUDE_TAGS, EXCLUDE_SELECTORS
 from spelt.lib import count_words
-from spelt.spiders.parser import SerializeParser
+from spelt.parser import SerializeParser
 
 
 init(autoreset=True)

@@ -1,6 +1,6 @@
 from html import unescape
 import re
-from spelt.spiders.spelt_opts import BLOCK_ELEMS
+from spelt.spelt_opts import BLOCK_ELEMS
 
 
 class SerializeParser():
