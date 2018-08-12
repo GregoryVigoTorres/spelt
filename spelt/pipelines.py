@@ -4,10 +4,12 @@ import re
 from urllib.parse import urlparse, quote_plus
 
 from lxml import etree
+import lxml.html
 from colorama import Fore, init, Style
 from scrapy.exporters import JsonLinesItemExporter
 from spelt.spiders.spelt_opts import EXCLUDE_TAGS, EXCLUDE_SELECTORS
 from spelt.lib import count_words
+from spelt.spiders.parser import SerializeParser
 
 
 init(autoreset=True)
@@ -45,6 +47,7 @@ class FileExportPipeline(object):
             log.info('{}Data Root{}{}'.format(Fore.CYAN,
                                               C.data_root,
                                               Style.RESET_ALL))
+            C.parser = etree.HTMLParser(target=SerializeParser())
         else:
             log.warn('Data will not be saved.\nYou should specify SAVE_HTML or SAVE_PLAIN_TEXT.')
 
@@ -108,10 +111,12 @@ class FileExportPipeline(object):
                                            fn,
                                            Style.RESET_ALL))
 
-    def get_text_content(self, doc):
+    def get_text_content(self, doc, encoding):
+        """re-parse to extract text"""
         body = doc.find('body')
-        txt_content = body.text_content()
-        txt_content = re.sub('\s\s+', lambda i: i.group(0)[0], txt_content)
+        HTML = lxml.html.tostring(body, encoding=encoding)
+        HTML = HTML.decode(encoding=encoding)
+        txt_content = etree.HTML(HTML, self.parser)
         return txt_content
 
     def incr_stats(self, wc):
@@ -123,29 +128,34 @@ class FileExportPipeline(object):
         """
         Save extracted text and potentially raw HTML from scraped URL
         to a file
+
+        The response ends up getting parsed twice. The first time is to remove
+        unwanted elements and the second is to extract the text.
         """
         if not item:
             return item
 
         txt_path, html_path = self.get_filenames(item.get('url'))
 
-        doc = item['document']
+        response = item['document']
+        encoding = item.get('encoding') or 'utf-8'
+        doc = lxml.html.fromstring(response)
         doc = self.strip_elems_by_tag(doc)
         doc = self.strip_elems_by_selector(doc)
 
         if self.save_html:
             html_content = etree.tostring(doc, pretty_print=True)
-            html_content = html_content.decode(encoding=item['encoding'])
+            html_content = html_content.decode(encoding=encoding)
             self.save_to_file(html_path, html_content)
 
         txt_content = ''
         if self.save_text:
-            txt_content = self.get_text_content(doc)
+            txt_content = self.get_text_content(doc, encoding)
             self.save_to_file(txt_path, txt_content)
 
         if self.count_words:
             if not txt_content:
-                txt_content = self.get_text_content(doc)
+                txt_content = self.get_text_content(doc, encoding)
 
             wc = count_words(txt_content)
             wc['url'] = item['url']

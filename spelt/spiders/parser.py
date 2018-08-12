@@ -1,8 +1,9 @@
+from html import unescape
 import re
-from .spelt_opts import BLOCK_ELEMS
+from spelt.spiders.spelt_opts import BLOCK_ELEMS
 
 
-class Serializer():
+class SerializeParser():
     def __init__(self):
         self.cur_tag = None
         self.text = ''
@@ -20,13 +21,12 @@ class Serializer():
         data = data.replace('\n', '')
         self.text += data
 
-
     def comment(self, text):
         pass
 
     def close(self):
-        # try to fixed leading/trailing whitespace
-        text = re.sub(' +', ' ', self.text)
-        text = re.sub('\s+\n', '\n', text)
-        text = re.sub('\n\s+', '\n', text)
+        text = re.sub('\s\s+', lambda m: m.group(0)[0], self.text)
+        text = unescape(text)
+        self.text = ''
+        self.cur_tag = None
         return text
