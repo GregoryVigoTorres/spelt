@@ -22,6 +22,11 @@ class FileExportPipeline(object):
         C.data_root = crawler.settings.get('DATA_DIR')
         assert os.path.exists(C.data_root)
         C.save_html = crawler.settings.get('SAVE_HTML')
+        C.save_text = crawler.settings.get('SAVE_PLAIN_TEXT')
+
+        if not C.save_html or C.save_text:
+            log.warn('Data will not be saved.\nYou must specify SAVE_HTML or SAVE_PLAIN_TEXT.')
+
         C.exclude_tags = EXCLUDE_TAGS
         C.exclude_selectors = EXCLUDE_SELECTORS
         return C
@@ -96,9 +101,10 @@ class FileExportPipeline(object):
         doc = self.strip_elems_by_tag(doc)
         doc = self.strip_elems_by_selector(doc)
 
-        txt_content = doc.text_content()
-        txt_content = re.sub('\s\s+', lambda i: i.group(0)[0], txt_content)
-        self.save_to_file(txt_path, txt_content)
+        if self.save_text:
+            txt_content = doc.text_content()
+            txt_content = re.sub('\s\s+', lambda i: i.group(0)[0], txt_content)
+            self.save_to_file(txt_path, txt_content)
 
         if self.save_html:
             html_content = etree.tostring(doc, pretty_print=True)

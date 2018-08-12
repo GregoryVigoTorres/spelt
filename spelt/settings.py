@@ -8,7 +8,7 @@ LOG_LEVEL = 'INFO'
 SPIDER_MODULES = ['spelt.spiders']
 NEWSPIDER_MODULE = 'spelt.spiders'
 
-USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0'
+USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; rv:61.0) Gecko/20100101 Firefox/61.0'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
@@ -24,7 +24,7 @@ DOWNLOAD_DELAY = 3
 CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
 
-COOKIES_ENABLED = False
+COOKIES_ENABLED = True
 
 # Override the default request headers:
 #DEFAULT_REQUEST_HEADERS = {
@@ -65,6 +65,7 @@ if not os.path.exists(DATA_DIR):
 
 # Save response HTML
 SAVE_HTML = True
+SAVE_PLAIN_TEXT = True
 
 ITEM_PIPELINES = {
    'spelt.pipelines.FileExportPipeline': 300,
