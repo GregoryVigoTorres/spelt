@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import lxml.html
-from scrapy import Request
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy_splash import SplashRequest
@@ -19,16 +18,14 @@ class SerializeSpider(CrawlSpider):
              callback='parse_item'),
     )
 
-    encoding = 'utf-8'
-
-    def start_requests(self):
-        for url in self.start_urls:
-            self.logger.info(url)
-            yield Request(url,
-                          callback=self.parse_item,
-                          errback=self.parse_errback)
-    #         yield SplashRequest(url, self.parse,
-    #                             args=self.settings.get('SPLASH_ARGS'))
+    def _build_request(self, rule, link):
+        """Re-implemented from base class
+            uses SplashRequest instead of Request
+        """
+        r = SplashRequest(url=link.url, callback=self._response_downloaded)
+        self.logger.info(r)
+        r.meta.update(rule=rule, link_text=link.text)
+        return r
 
     def parse_errback(self, error):
         self.logger.error(repr(error))
