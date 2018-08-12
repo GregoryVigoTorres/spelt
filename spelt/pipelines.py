@@ -5,6 +5,7 @@ from urllib.parse import urlparse, quote_plus
 
 from lxml import etree
 from colorama import Fore, init, Style
+from scrapy.exporters import JsonLinesItemExporter
 from spelt.spiders.spelt_opts import EXCLUDE_TAGS, EXCLUDE_SELECTORS
 from spelt.lib import count_words
 
@@ -14,20 +15,38 @@ log = logging.getLogger(__name__)
 
 
 class FileExportPipeline(object):
+    def close_spider(self, spider):
+        if self.count_words:
+            self.wc_data_fd.close()
+            log.info('\ntotal characters: {wch}\ntotal words: {wc}\ntotal lines: {wl}'.format(
+                wch=self.char_count,
+                wc=self.word_count,
+                wl=self.line_count
+            ))
+
     @classmethod
     def from_crawler(cls, crawler):
-        log.info('{}Data Root{}{}'.format(Fore.CYAN,
-                                          crawler.settings.get('DATA_DIR'),
-                                          Style.RESET_ALL))
         C = cls()
-        C.data_root = crawler.settings.get('DATA_DIR')
-        assert os.path.exists(C.data_root)
         C.save_html = crawler.settings.get('SAVE_HTML')
         C.save_text = crawler.settings.get('SAVE_PLAIN_TEXT')
         C.count_words = crawler.settings.get('COUNT_WORDS')
 
-        if not C.save_html or C.save_text:
-            log.warn('Data will not be saved.\nYou must specify SAVE_HTML or SAVE_PLAIN_TEXT.')
+        if C.count_words:
+            C.stats_path = crawler.settings.get('STATS_PATH')
+            C.wc_data_fd = open(C.stats_path, mode='wb')
+            C.stats_exporter = JsonLinesItemExporter(C.wc_data_fd)
+            C.word_count = 0
+            C.line_count = 0
+            C.char_count = 0
+
+        if C.save_html or C.save_text:
+            C.data_root = crawler.settings.get('DATA_DIR')
+            assert os.path.exists(C.data_root)
+            log.info('{}Data Root{}{}'.format(Fore.CYAN,
+                                              C.data_root,
+                                              Style.RESET_ALL))
+        else:
+            log.warn('Data will not be saved.\nYou should specify SAVE_HTML or SAVE_PLAIN_TEXT.')
 
         C.exclude_tags = EXCLUDE_TAGS
         C.exclude_selectors = EXCLUDE_SELECTORS
@@ -85,15 +104,19 @@ class FileExportPipeline(object):
 
         with open(fn, mode='w') as fd:
             fd.write(content)
-            logging.info('{}saved {}{}'.format(Fore.CYAN,
-                                               fn,
-                                               Style.RESET_ALL))
+            log.info('{}saved {}{}'.format(Fore.CYAN,
+                                           fn,
+                                           Style.RESET_ALL))
 
     def get_text_content(self, doc):
         txt_content = doc.text_content()
         txt_content = re.sub('\s\s+', lambda i: i.group(0)[0], txt_content)
         return txt_content
 
+    def incr_stats(self, wc):
+        self.word_count += wc['words']
+        self.line_count += wc['lines']
+        self.char_count += wc['characters']
 
     def process_item(self, item, spider):
         """
@@ -109,6 +132,11 @@ class FileExportPipeline(object):
         doc = self.strip_elems_by_tag(doc)
         doc = self.strip_elems_by_selector(doc)
 
+        if self.save_html:
+            html_content = etree.tostring(doc, pretty_print=True)
+            html_content = html_content.decode(encoding=item['encoding'])
+            self.save_to_file(html_path, html_content)
+
         txt_content = ''
         if self.save_text:
             txt_content = self.get_text_content(doc)
@@ -117,13 +145,13 @@ class FileExportPipeline(object):
         if self.count_words:
             if not txt_content:
                 txt_content = self.get_text_content(doc)
-            wc = count_words(txt_content)
-            # how and where can I save the word count?
-            log.info(wc)
 
-        if self.save_html:
-            html_content = etree.tostring(doc, pretty_print=True)
-            html_content = html_content.decode(encoding=item['encoding'])
-            self.save_to_file(html_path, html_content)
+            wc = count_words(txt_content)
+            wc['url'] = item['url']
+            log.info('{}stats {}{}'.format(Fore.CYAN,
+                                           repr(wc),
+                                           Style.RESET_ALL))
+            self.stats_exporter.export_item(wc)
+            self.incr_stats(wc)
 
         return item

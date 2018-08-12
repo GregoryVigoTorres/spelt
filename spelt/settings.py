@@ -63,7 +63,8 @@ DATA_DIR = os.path.join(root, 'data')
 if not os.path.exists(DATA_DIR):
     os.mkdir(DATA_DIR)
 
-# Save response HTML
+STATS_PATH = os.path.join(DATA_DIR, 'stats.json')
+
 SAVE_HTML = True
 SAVE_PLAIN_TEXT = True
 COUNT_WORDS = True
