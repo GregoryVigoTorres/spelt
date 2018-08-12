@@ -6,6 +6,7 @@ from urllib.parse import urlparse, quote_plus
 from lxml import etree
 from colorama import Fore, init, Style
 from spelt.spiders.spelt_opts import EXCLUDE_TAGS, EXCLUDE_SELECTORS
+from spelt.lib import count_words
 
 
 init(autoreset=True)
@@ -23,6 +24,7 @@ class FileExportPipeline(object):
         assert os.path.exists(C.data_root)
         C.save_html = crawler.settings.get('SAVE_HTML')
         C.save_text = crawler.settings.get('SAVE_PLAIN_TEXT')
+        C.count_words = crawler.settings.get('COUNT_WORDS')
 
         if not C.save_html or C.save_text:
             log.warn('Data will not be saved.\nYou must specify SAVE_HTML or SAVE_PLAIN_TEXT.')
@@ -87,6 +89,12 @@ class FileExportPipeline(object):
                                                fn,
                                                Style.RESET_ALL))
 
+    def get_text_content(self, doc):
+        txt_content = doc.text_content()
+        txt_content = re.sub('\s\s+', lambda i: i.group(0)[0], txt_content)
+        return txt_content
+
+
     def process_item(self, item, spider):
         """
         Save extracted text and potentially raw HTML from scraped URL
@@ -101,10 +109,17 @@ class FileExportPipeline(object):
         doc = self.strip_elems_by_tag(doc)
         doc = self.strip_elems_by_selector(doc)
 
+        txt_content = ''
         if self.save_text:
-            txt_content = doc.text_content()
-            txt_content = re.sub('\s\s+', lambda i: i.group(0)[0], txt_content)
+            txt_content = self.get_text_content(doc)
             self.save_to_file(txt_path, txt_content)
+
+        if self.count_words:
+            if not txt_content:
+                txt_content = self.get_text_content(doc)
+            wc = count_words(txt_content)
+            # how and where can I save the word count?
+            log.info(wc)
 
         if self.save_html:
             html_content = etree.tostring(doc, pretty_print=True)

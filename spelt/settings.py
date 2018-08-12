@@ -66,6 +66,7 @@ if not os.path.exists(DATA_DIR):
 # Save response HTML
 SAVE_HTML = True
 SAVE_PLAIN_TEXT = True
+COUNT_WORDS = True
 
 ITEM_PIPELINES = {
    'spelt.pipelines.FileExportPipeline': 300,
