@@ -19,6 +19,11 @@ log = logging.getLogger(__name__)
 class FileExportPipeline(object):
     def close_spider(self, spider):
         if self.count_words:
+            wc_tot = {'total_characters': self.char_count,
+                      'total_words': self.word_count,
+                      'total_lines': self.line_count}
+            self.stats_exporter.export_item(wc_tot)
+
             self.wc_data_fd.close()
             log.info('\ntotal characters: {wch}\ntotal words: {wc}\ntotal lines: {wl}'.format(
                 wch=self.char_count,
@@ -112,9 +117,10 @@ class FileExportPipeline(object):
                                            Style.RESET_ALL))
 
     def get_text_content(self, doc, encoding):
-        """re-parse to extract text"""
-        body = doc.find('body')
-        HTML = lxml.html.tostring(body, encoding=encoding)
+        """re-parse to extract text
+            The head element has probably already been removed
+        """
+        HTML = lxml.html.tostring(doc, encoding=encoding)
         HTML = HTML.decode(encoding=encoding)
         txt_content = etree.HTML(HTML, self.parser)
         return txt_content
