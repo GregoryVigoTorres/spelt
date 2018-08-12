@@ -109,7 +109,8 @@ class FileExportPipeline(object):
                                            Style.RESET_ALL))
 
     def get_text_content(self, doc):
-        txt_content = doc.text_content()
+        body = doc.find('body')
+        txt_content = body.text_content()
         txt_content = re.sub('\s\s+', lambda i: i.group(0)[0], txt_content)
         return txt_content
 
