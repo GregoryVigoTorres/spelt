@@ -1,177 +1,43 @@
 # -*- coding: utf-8 -*-
-import logging
-import re
-from urllib.parse import urlparse, urlunparse
-
-from colorama import Fore, Back, Style, init
-init(autoreset=True)
-
 import lxml.html
-from lxml import etree
-import scrapy
+from scrapy import Request
+from scrapy.spiders import CrawlSpider, Rule
+from scrapy.linkextractors import LinkExtractor
 from scrapy_splash import SplashRequest
 
-from .parser import Serializer
-from .spelt_opts import (EXCLUDE_TAGS, EXCLUDE_SELECTORS)
+from spelt.items import SpeltItem
 
 
-class SerializeSpider(scrapy.Spider):
+class SerializeSpider(CrawlSpider):
     name = "spelt"
-    allowed_domains = []
-    start_urls = ['https://doc.scrapy.org/en/latest/topics/settings.html']
-    link_urls = []
-    exclude_selectors = EXCLUDE_SELECTORS
-    exclude_tags = EXCLUDE_TAGS
-    wspace_rx = re.compile('(\s+)|(\t+)|(\n+)')
+    allowed_domains = ['scrapy.org']
+    start_urls = ['https://docs.scrapy.org']
+
+    rules = (
+        Rule(LinkExtractor(allow_domains='docs.scrapy.org'),
+             follow=True,
+             callback='parse_item'),
+    )
+
     encoding = 'utf-8'
 
     def start_requests(self):
         for url in self.start_urls:
-            yield SplashRequest(url, self.parse,
-                                args=self.settings.get('SPLASH_ARGS'))
+            self.logger.info(url)
+            yield Request(url,
+                          callback=self.parse_item,
+                          errback=self.parse_errback)
+    #         yield SplashRequest(url, self.parse,
+    #                             args=self.settings.get('SPLASH_ARGS'))
 
-    def extract_links(self, doc, response):
-        """
-        only get local links
-        """
-        links = doc.xpath('.//a')
+    def parse_errback(self, error):
+        self.logger.error(repr(error))
 
-        base_url = urlparse(response.url)
-
-        def gen_links(links):
-            for i in links:
-                href = i.attrib.get('href')
-
-                if not href:
-                    continue
-
-                href = href.strip()
-
-                if href in self.link_urls:
-                    continue
-
-                if 'mailto:' in href:
-                    continue
-
-                if href.startswith('#'):
-                    continue
-
-                if '#' in href:
-                    anchor = href.find('#')
-                    href = href[0:anchor]
-
-                # get real URLs for relative HREFs
-                parsed_url = urlparse(href)
-
-                if not parsed_url.scheme or parsed_url.netloc:
-                    href = urlunparse((base_url.scheme,
-                                       base_url.netloc,
-                                       parsed_url.path,
-                                       parsed_url.params,
-                                       parsed_url.query,
-                                       parsed_url.fragment))
-
-                yield href
-
-        hrefs = list(gen_links(links))
-        self.link_urls.extend(hrefs)
-        return set(hrefs)
-
-    def strip_elems(self, exclude_elems):
-        """
-        removes elements from doc tree
-        """
-        for E in exclude_elems:
-            try:
-                E.getparent().remove(E)
-                logging.info('{}dropped: {}{}'.format(Fore.RED,
-                                                      E,
-                                                      Style.RESET_ALL))
-            except Exception as E:
-                logging.info(E)
-
-    def strip_elems_by_selector(self, doc):
-        for sel in self.exclude_selectors:
-            exclude_elems = doc.cssselect(sel)
-            self.strip_elems(exclude_elems)
-        return doc
-
-    def strip_elems_by_tag(self, doc):
-        for tag in self.exclude_tags:
-            arg = './/{}'.format(tag)
-            exclude_elems = doc.xpath(arg)
-            self.strip_elems(exclude_elems)
-        return doc
-
-    def get_filename(self, response):
-        """
-        filename for serialized text
-        provides base filename without extension
-        """
-        fn = response.url.rstrip('/')
-        fn = fn.replace('http://', '').\
-                replace('https://', '').\
-                replace('www.', '').\
-                replace('/', '_')
-
-        if len(fn) > 80:
-            fn = fn[0:80]
-
-        return fn
-
-    def serialize(self, doc):
-        """
-        remove elements
-        return serialized text
-        """
-        doc = self.strip_elems_by_tag(doc)
-        doc = self.strip_elems_by_selector(doc)
-        HTML = etree.tostring(doc, encoding=self.encoding)
-        HTML = HTML.decode(encoding=self.encoding)
-        Parser = etree.HTMLParser(target=Serializer())
-        text = etree.HTML(HTML, Parser)
-        return text
-
-    def parse(self, response):
-        """
-        passes response.text to serialize
-        gets filename from URL
-        """
-        try:
-            doc = lxml.html.fromstring(response.text)
-            logging.info('[PARSING] {} {}'.format(response.status,
+    def parse_item(self, response):
+        doc = lxml.html.fromstring(response.text)
+        self.logger.info('[PARSING] {} {}'.format(response.status,
                                                   response.url))
-        except Exception as E:
-            logging.info('{}[ERROR] {} cannot be parsed{}'.format(
-                Fore.RED,
-                response.url,
-                Style.RESET_ALL))
-            logging.info(E)
-            yield
-
-        enc_elem = doc.xpath('.//meta[@charset]')
-        if enc_elem:
-            self.encoding = enc_elem[0].get('charset')
-
-        text = self.serialize(doc)
-
-        if not text:
-            logging.info('{}[ERROR] No text found {}{}'.format(
-                Fore.RED,
-                response.url,
-                Style.RESET_ALL))
-            yield
-
-        fn = self.get_filename(response)
-
-        yield {'filename': fn,
-               'html': response.text,
-               'text': text}
-
-        ## get links to follow
-        links = self.extract_links(doc, response)
-
-        for url in links:
-            yield SplashRequest(url,
-                                self.parse,
-                                args=self.settings.get('SPLASH_ARGS'))
+        item = SpeltItem(document=doc,
+                         encoding=response.encoding,
+                         url=response.url)
+        yield item
