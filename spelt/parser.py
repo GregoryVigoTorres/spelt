@@ -21,14 +21,14 @@ class SerializeParser():
             self.text += '\n'
 
     def data(self, data):
-        data = data.replace('\n', '')
+        data = data.replace('\n', ' ')
         self.text += data
 
     def comment(self, text):
         pass
 
     def close(self):
-        text = re.sub('\s\s+', lambda m: m.group(0)[0], self.text)
+        text = re.sub('(\s\s+)', lambda m: m.groups(0)[0], self.text)
         text = unescape(text)
         self.text = ''
         self.cur_tag = None
