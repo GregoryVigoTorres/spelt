@@ -9,11 +9,11 @@ from spelt.items import SpeltItem
 
 class SerializeSpider(CrawlSpider):
     name = "spelt"
-    allowed_domains = ['doc.scrapy.org']
-    start_urls = ['https://doc.scrapy.org/en/latest/']
+    allowed_domains = []
+    start_urls = []
 
     rules = (
-        Rule(LinkExtractor(allow_domains='doc.scrapy.org'),
+        Rule(LinkExtractor(allow_domains=''),
              follow=True,
              callback='parse_item'),
     )
