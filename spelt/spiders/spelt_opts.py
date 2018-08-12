@@ -2,7 +2,6 @@
 EXCLUDE_TAGS = [
     'head',
     'script',
-    'noscript',
     'style'
 ]
 
