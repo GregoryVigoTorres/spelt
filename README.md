@@ -1,4 +1,4 @@
-#Spelt
+# Spelt
 *just the words*
 *Version 2.0*
 
@@ -9,7 +9,7 @@ Serialize HTML content from a website into plain text using [Scrapy](https://doc
 **Splash** is a Javascript rendering service used to (hopefully) make it possible to scrape dynamic content and **Scrapy** is an asynchronous scraping framework. **Scrapy-splash** makes it easy to use them together.
 
 
-##Installation##
+## Installation
 Tested with Python 3.6.
 At the time of writing, Spelt doesn't work with Python 3.7 due to incompatibilities with dependencies.
 
@@ -22,7 +22,7 @@ Splash and scrapy-splash are required. Docker is recommended.
 See the Docker, Splash and scrapy-splash docs for more information.
 
 
-##Usage##
+## Usage
 Version 2.0
 If you want to use the `runsplash` script you need to have [Docker](https://www.docker.com/) installed.
 This is the easiest way to run splash, but it's not the only way. See the Splash and scrapy-splash docs for more information.
