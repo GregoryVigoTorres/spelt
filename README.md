@@ -1,6 +1,5 @@
 # Spelt
 *just the words*
-*Version 2.0*
 
 Serialize HTML content from a website into plain text using [Scrapy](https://doc.scrapy.org/en/latest/intro/overview.html) and [Splash](https://splash.readthedocs.io/en/stable/) via [scrapy-splash](https://github.com/scrapy-plugins/scrapy-splash).
 
@@ -23,7 +22,6 @@ See the Docker, Splash and scrapy-splash docs for more information.
 
 
 ## Usage
-Version 2.0
 If you want to use the `runsplash` script you need to have [Docker](https://www.docker.com/) installed.
 This is the easiest way to run splash, but it's not the only way. See the Splash and scrapy-splash docs for more information.
 You may need to make runsplash executable with `chmod 755 runsplash`.
@@ -51,6 +49,7 @@ Spelt serialization options are in `spiders/spelt_opts.py`.
 
 To start crawling run `scrapy crawl spelt`.
 
+version 2.0
 
 Copyright Gregory Vigo Torres, 2018
 License GPL v.3
